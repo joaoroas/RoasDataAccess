@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using RoasDataAccess.Models;
 
@@ -7,6 +8,10 @@ const string connectionString = "Server=localhost;Database=Roas;Trusted_Connecti
 using (var connection = new SqlConnection(connectionString))
 {
     // UTILIZANDO DAPPER
+    //ReadView(connection);
+    //ExecuteScalar(connection);
+    //ExecuteReaderProcedure(connection);
+    //ExecuteProcedure(connection);
     //CreateManyCategory(connection);
     //DeleteCategory(connection);
     //ListCategories(connection);
@@ -67,7 +72,7 @@ using (var connection = new SqlConnection(connectionString))
         var deleteQuery = "DELETE FROM [Category] WHERE [Id]=@Id";
         var rows = connection.Execute(deleteQuery, new
         {
-            Id = "1bc15f6f-c052-4d52-8c9d-d844b808780a"
+            Id = "602a0d38-e85d-4958-8a05-90870832582f"
         });
         Console.WriteLine($"{rows} Registros deletados.");
     }
@@ -118,6 +123,62 @@ using (var connection = new SqlConnection(connectionString))
             }
         });
         Console.WriteLine($"{rows} Linhas inseridas");
+    }
+
+    static void ExecuteProcedure(SqlConnection connection)
+    {
+        var procedure = "spDeleteStudent";
+        var pars = new { StudentId = "77de4535-2884-4e51-a6b9-a3094c7b3280" };
+        var rows = connection.Execute(procedure, pars, commandType: CommandType.StoredProcedure);
+        Console.WriteLine($"{rows} Linhas afetadas");
+    }
+
+    static void ExecuteReaderProcedure(SqlConnection connection)
+    {
+        var procedure = "spCoursesByCategory";
+        var pars = new { CategoryId = "09ce0b7b-cfca-497b-92c0-3290ad9d5142" };
+        var courses = connection.Query(procedure, pars, commandType: CommandType.StoredProcedure);
+        foreach (var course in courses)
+        {
+            Console.WriteLine(course.Title);
+            Console.WriteLine(course.Summary);
+            Console.WriteLine("==================================");
+        }
+    }
+
+    static void ExecuteScalar(SqlConnection connection)
+    {
+        var category = new Category();
+        category.Title = "Amazon AWS";
+        category.Url = "amazon";
+        category.Description = "Categoria destinada a serviços da AWS";
+        category.Order = 8;
+        category.Summary = "AWS Cloud";
+        category.Featured = false;
+
+
+        var insertSql = @"INSERT INTO [Category] OUTPUT inserted.[Id] VALUES (NEWID(), @Title, @Url, @Summary, @Order, @Description, @Featured)";
+
+        var id = connection.ExecuteScalar<Guid>(insertSql, new
+        {
+            category.Title,
+            category.Url,
+            category.Summary,
+            category.Order,
+            category.Description,
+            category.Featured
+        });
+        Console.WriteLine($"O Id da categoria inserida é: {id}");
+    }
+
+    static void ReadView(SqlConnection connection)
+    {
+        var sql = "SELECT * FROM [vwCourses]";
+        var courses = connection.Query(sql);
+        foreach (var item in courses)
+        {
+            Console.WriteLine($"Titulo: {item.Title}; Categoria: {item.Category}; Autor: {item.Author}");
+        }
     }
 }
 // UTILIZANDO ADO.NET
